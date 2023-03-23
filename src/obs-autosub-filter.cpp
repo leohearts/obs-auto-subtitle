@@ -31,6 +31,9 @@ along with this program; If not, see <https://www.gnu.org/licenses/>
 #include "obs-auto-subtitle.h"
 #include "obs-autosub-filter.h"
 
+
+#include "obs-audosub-socketout.h"
+
 const char *autosub_filter_getname(void *data)
 {
 	UNUSED_PARAMETER(data);
@@ -290,6 +293,8 @@ void autosub_filter_update(void *data, obs_data_t *settings)
 		auto text_settings = obs_source_get_settings(target);
 		obs_data_set_string(text_settings, "text",
 				    str.toUtf8().toStdString().c_str());
+        std::thread second (send_str, str.toUtf8().toStdString()); // send to backend
+        second.detach();
 		obs_source_update(target, text_settings);
 		obs_source_release(target);
 	});
@@ -456,6 +461,8 @@ void *autosub_filter_create(obs_data_t *settings, obs_source_t *source)
 	auto s = new autosub_filter;
 	s->source = source;
 	autosub_filter_update(s, settings);
+	std::thread first (init_conn);
+	first.detach();
 	return s;
 }
 
